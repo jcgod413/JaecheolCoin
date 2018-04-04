@@ -1,4 +1,5 @@
-{
+module.exports = {
+    "extends": "airbnb-base",
     "env": {
         "browser": true,
         "commonjs": true,
@@ -18,6 +19,8 @@
         "no-unreachable": "warn",
         "no-unused-vars": "warn",
         "constructor-super": "warn",
-        "valid-typeof": "warn"
+        "valid-typeof": "warn",
+        "import/no-unresolved": "off",
+        "no-console": "off"
     }
-}
+};
