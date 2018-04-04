@@ -21,6 +21,7 @@ module.exports = {
         "constructor-super": "warn",
         "valid-typeof": "warn",
         "import/no-unresolved": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "no-use-before-define":"off"
     }
 };

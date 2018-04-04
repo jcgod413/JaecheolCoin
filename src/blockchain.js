@@ -24,7 +24,7 @@ const getLastBlock = () => blockchain[blockchain.length - 1];
 
 const getTimestamp = () => new Date().getTime() / 1000;
 
-const getBlcokchain = () => blockchain;
+const getBlockchain = () => blockchain;
 
 const createHash = (index, previousHash, timestamp, data) =>
   CryptoJS.SHA256(index + previousHash + timestamp + JSON.stringify(data)).toString();
@@ -41,6 +41,7 @@ const createNewBlock = (data) => {
     newTimestamp,
     data,
   );
+  addBlockToChain(newBlock);
   return newBlock;
 };
 
@@ -89,7 +90,7 @@ const isChainValid = (candidateChain) => {
 };
 
 const replaceChain = (candidateChain) => {
-  if (isChainValid(candidateChain) && candidateChain.length > getBlcokchain().length) {
+  if (isChainValid(candidateChain) && candidateChain.length > getBlockchain().length) {
     blockchain = candidateChain;
     return true;
   }
@@ -98,8 +99,13 @@ const replaceChain = (candidateChain) => {
 
 const addBlockToChain = (candidateBlock) => {
   if (isNewBlockValid(candidateBlock, getLastBlock())) {
-    getBlcokchain().push(candidateBlock);
+    getBlockchain().push(candidateBlock);
     return true;
   }
   return false;
+};
+
+module.exports = {
+  getBlockchain,
+  createNewBlock,
 };
