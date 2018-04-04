@@ -1,0 +1,10 @@
+{
+  "name": "JaecheolCoin",
+  "version": "1.0.0",
+  "description": "JaecheolCoin, the most awesome coin made in NodeJS",
+  "main": "src/server.js",
+  "repository": "https://github.com/jcgod413/JaecheolCoin.git",
+  "author": "Jaecheol Shin <jcgod413@gmail.com>",
+  "license": "MIT",
+  "private": false
+}
