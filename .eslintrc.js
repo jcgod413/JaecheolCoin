@@ -23,6 +23,8 @@ module.exports = {
         "import/no-unresolved": "off",
         "no-console": "off",
         "no-use-before-define": "off",
-        "no-template-curly-in-string": "off"
+        "no-template-curly-in-string": "off",
+        "no-case-declarations": "off",
+        "global-require": "off"
     }
 };
