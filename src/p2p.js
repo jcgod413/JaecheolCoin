@@ -14,6 +14,7 @@ const startP2PServer = (server) => {
 
 const initSocketConnection = (socket) => {
   sockets.push(socket);
+  handleSocketError(socket);
   socket.on('message', (data) => {
     console.log(data);
   });
@@ -27,6 +28,16 @@ const connectToPeers = (newPeer) => {
   ws.on('open', () => {
     initSocketConnection(ws);
   });
+};
+
+const closeSocketConnection = (ws) => {
+  ws.close();
+  sockets.splice(sockets.indexOf(ws), 1);
+};
+
+const handleSocketError = (ws) => {
+  ws.on('close', () => closeSocketConnection(ws));
+  ws.on('error', () => closeSocketConnection(ws));
 };
 
 module.exports = {
