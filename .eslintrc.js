@@ -27,6 +27,7 @@ module.exports = {
         "no-case-declarations": "off",
         "global-require": "off",
         "no-constant-condition": "off",
-        "function-paren-newline": "off"
+        "function-paren-newline": "off",
+        "no-restricted-properties": "off"
     }
 };
