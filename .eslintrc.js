@@ -25,6 +25,8 @@ module.exports = {
         "no-use-before-define": "off",
         "no-template-curly-in-string": "off",
         "no-case-declarations": "off",
-        "global-require": "off"
+        "global-require": "off",
+        "no-constant-condition": "off",
+        "function-paren-newline": "off"
     }
 };
