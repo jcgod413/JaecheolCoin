@@ -28,6 +28,10 @@ module.exports = {
         "global-require": "off",
         "no-constant-condition": "off",
         "function-paren-newline": "off",
-        "no-restricted-properties": "off"
+        "no-restricted-properties": "off",
+        "array-callback-return": "off",
+        "no-new": "off",
+        "prefer-template": "off",
+        "no-bitwise": "off"
     }
 };
