@@ -4,6 +4,8 @@ const utils = require('./utils');
 
 const ec = new elliptic.ec('secp256k1');
 
+const COINBASE_AMOUNT = 50;
+
 class TransactionOutput {
   constructor(address, amount) {
     this.address = address;
@@ -153,6 +155,9 @@ const getAmountInTxIn = (txIn, uTxOutList) =>
   findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount;
 
 const validateTx = (tx, uTxOutList) => {
+  if (!isTxStructureValid(tx)) {
+    return false;
+  }
   if (getTxId(tx) !== tx.id) {
     return false;
   }
@@ -173,6 +178,21 @@ const validateTx = (tx, uTxOutList) => {
     .reduce((a, b) => a + b, 0);
 
   if (amountInTxIns !== amountInTxOuts) {
+    return false;
+  }
+  return true;
+};
+
+const validateCoinbaseTx = (tx, blockIndex) => {
+  if (getTxId(tx) !== tx.id) {
+    return false;
+  } else if (tx.txIns.length !== 1) { // coinbase transaction shold have one transaction
+    return false;
+  } else if (tx.txIns[0].txOutIndex !== blockIndex) {
+    return false;
+  } else if (tx.txOuts.length !== 1) {
+    return false;
+  } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
     return false;
   }
   return true;
