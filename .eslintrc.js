@@ -32,6 +32,7 @@ module.exports = {
         "array-callback-return": "off",
         "no-new": "off",
         "prefer-template": "off",
-        "no-bitwise": "off"
+        "no-bitwise": "off",
+        "prefer-destructuring": "off"
     }
 };
