@@ -33,6 +33,7 @@ module.exports = {
         "no-new": "off",
         "prefer-template": "off",
         "no-bitwise": "off",
-        "prefer-destructuring": "off"
+        "prefer-destructuring": "off",
+        "new-cap": "off"
     }
 };
