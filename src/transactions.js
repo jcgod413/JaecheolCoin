@@ -6,16 +6,16 @@ const ec = new elliptic.ec('secp256k1');
 
 const COINBASE_AMOUNT = 50;
 
-class TransactionOutput {
+class TxOut {
   constructor(address, amount) {
     this.address = address;
     this.amount = amount;
   }
 }
 
-class TransactionInput {
-  // uTxOutId
-  // uTxOutIndex
+class TxIn {
+  // txOutId
+  // txOutIndex
   // Signature
 }
 
@@ -50,10 +50,10 @@ const getTxId = (tx) => {
 const findUTxOut = (txOutId, uTxOutIndex, uTxOutList) =>
   uTxOutList.find(uTxOut => uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === uTxOutIndex);
 
-const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
+const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
   const txIn = tx.txIns[txInIndex];
   const dataToSign = tx.id;
-  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOuts);
+  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList);
   if (referencedUTxOut === null) {
     return null;
   }
@@ -205,4 +205,13 @@ const validateCoinbaseTx = (tx, blockIndex) => {
     return false;
   }
   return true;
+};
+
+module.exports = {
+  getPublicKey,
+  getTxId,
+  signTxIn,
+  TxIn,
+  Transaction,
+  TxOut,
 };

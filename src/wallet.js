@@ -2,6 +2,16 @@ const elliptic = require('elliptic');
 const path = require('path');
 const fs = require('fs');
 const _ = require('lodash');
+const Transactions = require('./transactions');
+
+const {
+  getPublicKey,
+  getTxId,
+  signTxIn,
+  TxIn,
+  Transaction,
+  TxOut,
+} = Transactions;
 
 const ec = new elliptic.ec('secp256k1');
 
@@ -37,6 +47,66 @@ const initWallet = () => {
   const newPrivateKey = generatePrivateKey();
 
   fs.writeFileSync(privateKeyLocation, newPrivateKey);
+};
+
+const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
+  let currentAmount = 0;
+  const includedUTxOuts = [];
+  for (const myUTxOut of myUTxOuts) {
+    includedUTxOuts.push(myUTxOut);
+    currentAmount += myUTxOut.amount;
+    if (currentAmount > amountNeeded) {
+      const leftOverAmount = currentAmount - amountNeeded;
+      return {
+        includedUTxOuts,
+        leftOverAmount,
+      };
+    }
+  }
+  console.log('Not enough founds');
+  return false;
+};
+
+const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
+  const receiverTxOut = new TxOut(receiverAddress, amount);
+  if (leftOverAmount === 0) {
+    return [receiverTxOut];
+  }
+  const leftOverTxOut = new TxOut(myAddress, leftOverAmount);
+  return [receiverTxOut, leftOverTxOut];
+};
+
+const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
+  const myAddress = getPublicKey(privateKey);
+  const myUTxOuts = uTxOutList.filter(uTxO => uTxO.address === myAddress);
+
+  const {
+    includedUTxOuts,
+    leftOverAmount,
+  } = findAmountInUTxOuts(
+    amount,
+    myUTxOuts,
+  );
+
+  const toUnsignedTxIn = (uTxOut) => {
+    const txIn = new TxIn();
+    txIn.txOutId = uTxOut.txOutId;
+    txIn.txOutIndex = uTxOut.txOutIndex;
+  };
+
+  const unsignedTxIns = includedUTxOuts.map(toUnsignedTxIn);
+
+  const tx = new Transaction();
+  tx.txIns = unsignedTxIns;
+  tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
+
+  tx.id = getTxId(tx);
+  tx.txIns = tx.txIns.map((txIn, index) => {
+    txIn.signature = signTxIn(tx, index, privateKey, uTxOutList);
+    return txIn;
+  });
+
+  return tx;
 };
 
 module.exports = {

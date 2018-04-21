@@ -34,6 +34,8 @@ module.exports = {
         "prefer-template": "off",
         "no-bitwise": "off",
         "prefer-destructuring": "off",
-        "new-cap": "off"
+        "new-cap": "off",
+        "no-restricted-syntax": "off",
+        "no-param-reassign": "off"
     }
 };
