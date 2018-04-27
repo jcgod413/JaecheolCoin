@@ -36,6 +36,7 @@ module.exports = {
         "prefer-destructuring": "off",
         "new-cap": "off",
         "no-restricted-syntax": "off",
-        "no-param-reassign": "off"
+        "no-param-reassign": "off",
+        "consistent-return": "off"
     }
 };

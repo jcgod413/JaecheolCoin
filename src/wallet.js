@@ -36,7 +36,7 @@ const getPublicFromWallet = () => {
 
 const getBalance = (address, uTxOuts) =>
   _(uTxOuts)
-    .filter(uTxO => uTxOuts.address === address)
+    .filter(uTxO => uTxO.address === address)
     .map(uTxO => uTxO.amount)
     .sum();
 

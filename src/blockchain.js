@@ -10,6 +10,7 @@ const {
 
 const {
   createCoinbaseTx,
+  processTxs,
 } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;
@@ -41,7 +42,7 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
-const uTxOuts = [];
+let uTxOuts = [];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 
@@ -210,7 +211,18 @@ const replaceChain = (candidateChain) => {
 
 const addBlockToChain = (candidateBlock) => {
   if (isBlockValid(candidateBlock, getNewestBlock())) {
-    getBlockchain().push(candidateBlock);
+    const processedTxs = processTxs(
+      candidateBlock.data,
+      uTxOuts,
+      candidateBlock.index,
+    );
+
+    if (processedTxs === null) {
+      console.log('Couldnt process txs');
+      return false;
+    }
+    blockchain.push(candidateBlock);
+    uTxOuts = processedTxs;
     return true;
   }
   return false;
