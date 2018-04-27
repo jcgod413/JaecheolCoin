@@ -24,7 +24,7 @@ const generatePrivateKey = () => {
 };
 
 const getPrivateFromWallet = () => {
-  const buffer = fs.readFileSync(privateKeyLocation, 'utf-8');
+  const buffer = fs.readFileSync(privateKeyLocation, 'utf8');
   return buffer.toString();
 };
 
@@ -111,4 +111,6 @@ const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
 
 module.exports = {
   initWallet,
+  getBalance,
+  getPublicFromWallet,
 };
