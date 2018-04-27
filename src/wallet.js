@@ -34,11 +34,10 @@ const getPublicFromWallet = () => {
   return key.getPublic().encode('hex');
 };
 
-const getBalance = (address, uTxOuts) =>
-  _(uTxOuts)
-    .filter(uTxO => uTxO.address === address)
-    .map(uTxO => uTxO.amount)
-    .sum();
+const getBalance = (address, uTxOuts) => _(uTxOuts)
+  .filter(uTxO => uTxO.address === address)
+  .map(uTxO => uTxO.amount)
+  .sum();
 
 const initWallet = () => {
   if (fs.existsSync(privateKeyLocation)) {
@@ -55,7 +54,7 @@ const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
   for (const myUTxOut of myUTxOuts) {
     includedUTxOuts.push(myUTxOut);
     currentAmount += myUTxOut.amount;
-    if (currentAmount > amountNeeded) {
+    if (currentAmount >= amountNeeded) {
       const leftOverAmount = currentAmount - amountNeeded;
       return {
         includedUTxOuts,
@@ -63,7 +62,7 @@ const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
       };
     }
   }
-  console.log('Not enough founds');
+  throw Error('Not enough founds');
   return false;
 };
 
@@ -92,15 +91,18 @@ const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
     const txIn = new TxIn();
     txIn.txOutId = uTxOut.txOutId;
     txIn.txOutIndex = uTxOut.txOutIndex;
+    return txIn;
   };
 
   const unsignedTxIns = includedUTxOuts.map(toUnsignedTxIn);
 
   const tx = new Transaction();
+
   tx.txIns = unsignedTxIns;
   tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
 
   tx.id = getTxId(tx);
+
   tx.txIns = tx.txIns.map((txIn, index) => {
     txIn.signature = signTxIn(tx, index, privateKey, uTxOutList);
     return txIn;
@@ -113,4 +115,6 @@ module.exports = {
   initWallet,
   getBalance,
   getPublicFromWallet,
+  createTx,
+  getPrivateFromWallet,
 };

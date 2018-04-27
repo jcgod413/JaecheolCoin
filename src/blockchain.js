@@ -1,20 +1,23 @@
 const CryptoJS = require('crypto-js');
-const hexToBinary = require('hex-to-binary');
+const _ = require('lodash');
 const Wallet = require('./wallet');
+const Mempool = require('./memPool');
 const Transactions = require('./transactions');
+const hexToBinary = require('hex-to-binary');
 
 const {
   getBalance,
   getPublicFromWallet,
+  createTx,
+  getPrivateFromWallet,
 } = Wallet;
 
-const {
-  createCoinbaseTx,
-  processTxs,
-} = Transactions;
+const { createCoinbaseTx, processTxs } = Transactions;
+
+const { addToMempool, getMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
-const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
+const DIFFICULTY_ADJUSMENT_INTERVAL = 10;
 
 class Block {
   constructor(index, hash, previousHash, timestamp, data, difficulty, nonce) {
@@ -28,14 +31,12 @@ class Block {
   }
 }
 
-const getTimestamp = () => Math.round(new Date().getTime() / 1000);
-
 const genesisBlock = new Block(
   0,
-  '399DE39BFEA6784E4BDE5FF097D085A21BB4EA5148575051D988B6B74D68B082',
+  '2C4CEB90344F20CC4C77D626247AED3ED530C1AEE3E6E85AD494498B17414CAC',
   null,
-  getTimestamp(),
-  'This is the genesis block!',
+  1520408084,
+  'This is the genesis!!',
   0,
   0,
 );
@@ -45,6 +46,8 @@ let blockchain = [genesisBlock];
 let uTxOuts = [];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
+
+const getTimestamp = () => Math.round(new Date().getTime() / 1000);
 
 const getBlockchain = () => blockchain;
 
@@ -58,7 +61,7 @@ const createNewBlock = () => {
     getPublicFromWallet(),
     getNewestBlock().index + 1,
   );
-  const blockData = [coinbaseTx];
+  const blockData = [coinbaseTx].concat(getMempool());
   return createNewRawBlock(blockData);
 };
 
@@ -81,15 +84,20 @@ const createNewRawBlock = (data) => {
 
 const findDifficulty = () => {
   const newestBlock = getNewestBlock();
-  if (newestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && newestBlock.index !== 0) {
-    return calculateNewDifficulty(newestBlock);
+  if (
+    newestBlock.index % DIFFICULTY_ADJUSMENT_INTERVAL === 0 &&
+    newestBlock.index !== 0
+  ) {
+    return calculateNewDifficulty(newestBlock, getBlockchain());
   }
   return newestBlock.difficulty;
 };
 
 const calculateNewDifficulty = (newestBlock) => {
-  const lastCalculatedBlock = blockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
-  const timeExpected = BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
+  const lastCalculatedBlock =
+    blockchain[blockchain.length - DIFFICULTY_ADJUSMENT_INTERVAL];
+  const timeExpected =
+    BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSMENT_INTERVAL;
   const timeTaken = newestBlock.timestamp - lastCalculatedBlock.timestamp;
   if (timeTaken < timeExpected / 2) {
     return lastCalculatedBlock.difficulty + 1;
@@ -143,46 +151,47 @@ const getBlocksHash = block =>
     block.nonce,
   );
 
-const isTimestampValid = (newBlock, oldBlock) => (
+const isTimeStampValid = (newBlock, oldBlock) => (
   oldBlock.timestamp - 60 < newBlock.timestamp &&
-  newBlock.timestamp - 60 < getTimestamp()
+    newBlock.timestamp - 60 < getTimestamp()
 );
-
-const isBlockStructureValid = (block) => {
-  const result = (
-    typeof block.index === 'number' &&
-    typeof block.hash === 'string' &&
-    typeof block.previousHash === 'string' &&
-    typeof block.timestamp === 'number' &&
-    typeof block.data === 'object'
-  );
-  return result;
-};
 
 const isBlockValid = (candidateBlock, latestBlock) => {
   if (!isBlockStructureValid(candidateBlock)) {
     console.log('The candidate block structure is not valid');
+    return false;
   } else if (latestBlock.index + 1 !== candidateBlock.index) {
-    console.log('The candidate block does not have a valid index');
+    console.log('The candidate block doesnt have a valid index');
     return false;
   } else if (latestBlock.hash !== candidateBlock.previousHash) {
-    console.log('The previous Hash of the candidate block is not the hash of the latest block');
+    console.log(
+      'The previousHash of the candidate block is not the hash of the latest block',
+    );
     return false;
   } else if (getBlocksHash(candidateBlock) !== candidateBlock.hash) {
     console.log('The hash of this block is invalid');
     return false;
-  } else if (!isTimestampValid(candidateBlock, latestBlock)) {
-    console.log(candidateBlock, latestBlock);
+  } else if (!isTimeStampValid(candidateBlock, latestBlock)) {
     console.log('The timestamp of this block is dodgy');
     return false;
   }
   return true;
 };
 
+const isBlockStructureValid = block => (
+  typeof block.index === 'number' &&
+    typeof block.hash === 'string' &&
+    typeof block.previousHash === 'string' &&
+    typeof block.timestamp === 'number' &&
+    typeof block.data === 'object'
+);
+
 const isChainValid = (candidateChain) => {
   const isGenesisValid = block => JSON.stringify(block) === JSON.stringify(genesisBlock);
   if (!isGenesisValid(candidateChain[0])) {
-    console.log('The candidates genesisBlock is not the same as out genesisBlock');
+    console.log(
+      "The candidateChains's genesisBlock is not the same as our genesisBlock",
+    );
     return false;
   }
   for (let i = 1; i < candidateChain.length; i += 1) {
@@ -193,16 +202,17 @@ const isChainValid = (candidateChain) => {
   return true;
 };
 
-const sumDifficulty = (anyBlockchain) => {
+const sumDifficulty = anyBlockchain =>
   anyBlockchain
     .map(block => block.difficulty)
     .map(difficulty => Math.pow(2, difficulty))
     .reduce((a, b) => a + b);
-};
 
 const replaceChain = (candidateChain) => {
-  if (isChainValid(candidateChain) &&
-    sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())) {
+  if (
+    isChainValid(candidateChain) &&
+    sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())
+  ) {
     blockchain = candidateChain;
     return true;
   }
@@ -216,7 +226,6 @@ const addBlockToChain = (candidateBlock) => {
       uTxOuts,
       candidateBlock.index,
     );
-
     if (processedTxs === null) {
       console.log('Couldnt process txs');
       return false;
@@ -224,18 +233,29 @@ const addBlockToChain = (candidateBlock) => {
     blockchain.push(candidateBlock);
     uTxOuts = processedTxs;
     return true;
+
+    return true;
   }
   return false;
 };
 
+const getUTxOutList = () => _.cloneDeep(uTxOuts);
+
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
+const sendTx = (address, amount) => {
+  const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
+  addToMempool(tx, getUTxOutList());
+  return tx;
+};
+
 module.exports = {
+  getNewestBlock,
   getBlockchain,
   createNewBlock,
-  getNewestBlock,
   isBlockStructureValid,
   addBlockToChain,
   replaceChain,
   getAccountBalance,
+  sendTx,
 };

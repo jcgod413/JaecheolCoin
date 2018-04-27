@@ -1,7 +1,7 @@
 const CryptoJS = require('crypto-js');
 const elliptic = require('elliptic');
-const utils = require('./utils');
 const _ = require('lodash');
+const utils = require('./utils');
 
 const ec = new elliptic.ec('secp256k1');
 
@@ -22,7 +22,7 @@ class TxIn {
 
 class Transaction {
   // ID
-  // txInts[]
+  // txIns[]
   // txOuts[]
 }
 
@@ -39,6 +39,7 @@ const getTxId = (tx) => {
   const txInContent = tx.txIns
     .map(txIn => txIn.txOutId + txIn.txOutIndex)
     .reduce((a, b) => a + b, '');
+
   const txOutContent = tx.txOuts
     .map(txOut => txOut.address + txOut.amount)
     .reduce((a, b) => a + b, '');
@@ -46,16 +47,20 @@ const getTxId = (tx) => {
   return CryptoJS.SHA256(txInContent + txOutContent + tx.timestamp).toString();
 };
 
-const findUTxOut = (txOutId, uTxOutIndex, uTxOutList) =>
-  uTxOutList.find(uTxOut => uTxOut.txOutId === txOutId && uTxOut.uTxOutIndex === uTxOutIndex);
+const findUTxOut = (txOutId, txOutIndex, uTxOutList) => uTxOutList.find(
+  uTxO => uTxO.txOutId === txOutId && uTxO.txOutIndex === txOutIndex,
+);
 
 const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
   const txIn = tx.txIns[txInIndex];
   const dataToSign = tx.id;
-  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList);
-  if (referencedUTxOut === null) {
-    console.log("Couldn't find the referenced uTxOut, not signing");
-    return;
+  const referencedUTxOut = findUTxOut(
+    txIn.txOutId,
+    txIn.txOutIndex,
+    uTxOutList,
+  );
+  if (referencedUTxOut === null || referencedUTxOut === undefined) {
+    throw Error("Couldn't find the referenced uTxOut, not signing");
   }
   const referencedAddress = referencedUTxOut.address;
   if (getPublicKey(privateKey) !== referencedAddress) {
@@ -68,7 +73,7 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
 
 const getPublicKey = privateKey => ec
   .keyFromPrivate(privateKey, 'hex')
-  .getPublicKey()
+  .getPublic()
   .encode('hex');
 
 const updateUTxOuts = (newTxs, uTxOutList) => {
@@ -90,6 +95,14 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
     .concat(newUTxOuts);
   return resultingUTxOuts;
 };
+
+/*
+[(), B, C, D, E, F, G, ZZ, MM]
+
+
+A(40) ---> TRANSACTION  ----> ZZ(10)
+                        ----> MM(30)
+*/
 
 const isTxInStructureValid = (txIn) => {
   if (txIn === null) {
@@ -138,7 +151,6 @@ const isTxOutStructureValid = (txOut) => {
   return true;
 };
 
-
 const isTxStructureValid = (tx) => {
   if (typeof tx.id !== 'string') {
     console.log('Tx ID is not valid');
@@ -162,7 +174,6 @@ const isTxStructureValid = (tx) => {
   }
   return true;
 };
-
 
 const validateTxIn = (txIn, tx, uTxOutList) => {
   const wantedTxOut = uTxOutList.find(
@@ -216,7 +227,6 @@ const validateTx = (tx, uTxOutList) => {
   }
   return true;
 };
-
 
 const validateCoinbaseTx = (tx, blockIndex) => {
   if (getTxId(tx) !== tx.id) {
@@ -287,7 +297,7 @@ const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
   }
 
   const nonCoinbaseTxs = txs.slice(1);
-  
+
   return nonCoinbaseTxs
     .map(tx => validateTx(tx, uTxOutList))
     .reduce((a, b) => a + b, true);
@@ -309,4 +319,5 @@ module.exports = {
   TxOut,
   createCoinbaseTx,
   processTxs,
+  validateTx,
 };
