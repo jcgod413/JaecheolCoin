@@ -76,7 +76,7 @@ app
   });
 
 const server = app.listen(PORT, () =>
-  console.log(`Jaecheol HTTP Server running on port ${PORT} ✅`),
+  console.log(`JaecheolCoin Server running on port ${PORT} ✅`),
 );
 
 initWallet();

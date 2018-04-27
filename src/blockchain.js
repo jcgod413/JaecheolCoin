@@ -14,7 +14,7 @@ const {
 
 const { createCoinbaseTx, processTxs } = Transactions;
 
-const { addToMempool, getMempool } = Mempool;
+const { addToMempool, getMempool, updateMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSMENT_INTERVAL = 10;
@@ -232,6 +232,7 @@ const addBlockToChain = (candidateBlock) => {
     }
     blockchain.push(candidateBlock);
     uTxOuts = processedTxs;
+    updateMempool(uTxOuts);
     return true;
 
     return true;
@@ -244,7 +245,13 @@ const getUTxOutList = () => _.cloneDeep(uTxOuts);
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 const sendTx = (address, amount) => {
-  const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
+  const tx = createTx(
+    address,
+    amount,
+    getPrivateFromWallet(),
+    getUTxOutList(),
+    getMempool(),
+  );
   addToMempool(tx, getUTxOutList());
   return tx;
 };
