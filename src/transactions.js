@@ -98,8 +98,6 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
 
 /*
 [(), B, C, D, E, F, G, ZZ, MM]
-
-
 A(40) ---> TRANSACTION  ----> ZZ(10)
                         ----> MM(30)
 */
@@ -179,7 +177,7 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
   const wantedTxOut = uTxOutList.find(
     uTxO => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex,
   );
-  if (wantedTxOut === null) {
+  if (wantedTxOut === undefined) {
     console.log(`Didn't find the wanted uTxOut, the tx: ${tx} is invalid`);
     return false;
   }

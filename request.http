@@ -19,6 +19,8 @@ Content-Type: application/json
 
 ###
 GET http://localhost:3000/me/balance
+###
+GET http://localhost:4000/me/balance
 
 ###
 POST http://localhost:3000/transactions/
@@ -26,5 +28,14 @@ Content-Type: application/json
 
 {
     "address": "04f20aac39b4c5f79355c053fdaf30410820400bb83ad93dd8ff16834b555e0f6262efba6ea94a87d3c267b5e6aca433ca89b342ac95c40230349ea4bf9caff1ed",
-    "amount": 100
+    "amount": 10
 }
+
+###
+GET http://localhost:3000/transactions/
+
+###
+GET http://localhost:4000/transactions/
+
+###
+GET http://localhost:3000/blocks/7175e76dd1fa43646662595da5c173134f79fe6b4e554dfd9760622165f91e47

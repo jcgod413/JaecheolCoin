@@ -1,61 +1,83 @@
-const WebSockets = require("ws"),
-  Blockchain = require("./blockchain");
+const WebSockets = require('ws');
+const Blockchain = require('./blockchain');
+const Mempool = require('./mempool');
 
 const {
   getNewestBlock,
   isBlockStructureValid,
   replaceChain,
   getBlockchain,
-  addBlockToChain
+  addBlockToChain,
+  handleIncomingTx,
 } = Blockchain;
+
+const { getMempool } = Mempool;
 
 const sockets = [];
 
 // Messages Types
-const GET_LATEST = "GET_LATEST";
-const GET_ALL = "GET_ALL";
-const BLOCKCHAIN_RESPONSE = "BLOCKCHAIN_RESPONSE";
+const GET_LATEST = 'GET_LATEST';
+const GET_ALL = 'GET_ALL';
+const BLOCKCHAIN_RESPONSE = 'BLOCKCHAIN_RESPONSE';
+const REQUEST_MEMPOOL = 'REQUEST_MEMPOOL';
+const MEMPOOL_RESPONSE = 'MEMPOOL_RESPONSE';
 
 // Message Creators
-const getLatest = () => {
-  return {
-    type: GET_LATEST,
-    data: null
-  };
-};
+const getLatest = () => ({
+  type: GET_LATEST,
+  data: null,
+});
 
-const getAll = () => {
-  return {
-    type: GET_ALL,
-    data: null
-  };
-};
+const getAll = () => ({
+  type: GET_ALL,
+  data: null,
+});
 
-const blockchainResponse = data => {
-  return {
-    type: BLOCKCHAIN_RESPONSE,
-    data
-  };
-};
+const blockchainResponse = data => ({
+  type: BLOCKCHAIN_RESPONSE,
+  data,
+});
+
+// changed function name
+const getAllMempool = () => ({
+  type: REQUEST_MEMPOOL,
+  data: null,
+});
+
+const mempoolResponse = data => ({
+  type: MEMPOOL_RESPONSE,
+  data,
+});
 
 const getSockets = () => sockets;
 
-const startP2PServer = server => {
+const startP2PServer = (server) => {
   const wsServer = new WebSockets.Server({ server });
-  wsServer.on("connection", ws => {
+  wsServer.on('connection', (ws) => {
     initSocketConnection(ws);
   });
-  console.log("Nomadcoin P2P Server running");
+  wsServer.on('error', () => {
+    console.log('error');
+  });
+  console.log('JaecheolCoin P2P Server running');
 };
 
-const initSocketConnection = ws => {
+const initSocketConnection = (ws) => {
   sockets.push(ws);
   handleSocketMessages(ws);
   handleSocketError(ws);
   sendMessage(ws, getLatest());
+  setTimeout(() => {
+    sendMessageToAll(getAllMempool()); // changed line
+  }, 1000);
+  setInterval(() => {
+    if (sockets.includes(ws)) {
+      sendMessage(ws, '');
+    }
+  }, 1000);
 };
 
-const parseData = data => {
+const parseData = (data) => {
   try {
     return JSON.parse(data);
   } catch (e) {
@@ -64,13 +86,12 @@ const parseData = data => {
   }
 };
 
-const handleSocketMessages = ws => {
-  ws.on("message", data => {
+const handleSocketMessages = (ws) => {
+  ws.on('message', (data) => {
     const message = parseData(data);
     if (message === null) {
       return;
     }
-    console.log(message);
     switch (message.type) {
       case GET_LATEST:
         sendMessage(ws, responseLatest());
@@ -85,18 +106,37 @@ const handleSocketMessages = ws => {
         }
         handleBlockchainResponse(receivedBlocks);
         break;
+      case REQUEST_MEMPOOL:
+        sendMessage(ws, returnMempool());
+        break;
+      case MEMPOOL_RESPONSE:
+        const receivedTxs = message.data;
+        if (receivedTxs === null) {
+          return;
+        }
+        receivedTxs.forEach((tx) => {
+          try {
+            handleIncomingTx(tx);
+            broadcastMempool();
+          } catch (e) {
+            console.log(e);
+          }
+        });
+        break;
+      default:
+        break;
     }
   });
 };
 
-const handleBlockchainResponse = receivedBlocks => {
+const handleBlockchainResponse = (receivedBlocks) => {
   if (receivedBlocks.length === 0) {
-    console.log("Received blocks have a length of 0");
+    console.log('Received blocks have a length of 0');
     return;
   }
   const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
   if (!isBlockStructureValid(latestBlockReceived)) {
-    console.log("The block structure of the block received is not valid");
+    console.log('The block structure of the block received is not valid');
     return;
   }
   const newestBlock = getNewestBlock();
@@ -113,6 +153,8 @@ const handleBlockchainResponse = receivedBlocks => {
   }
 };
 
+const returnMempool = () => mempoolResponse(getMempool());
+
 const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
 
 const sendMessageToAll = message =>
@@ -124,24 +166,29 @@ const responseAll = () => blockchainResponse(getBlockchain());
 
 const broadcastNewBlock = () => sendMessageToAll(responseLatest());
 
-const handleSocketError = ws => {
-  const closeSocketConnection = ws => {
+const broadcastMempool = () => sendMessageToAll(returnMempool()); // <--- new line
+
+const handleSocketError = (ws) => {
+  const closeSocketConnection = (ws) => {
     ws.close();
     sockets.splice(sockets.indexOf(ws), 1);
   };
-  ws.on("close", () => closeSocketConnection(ws));
-  ws.on("error", () => closeSocketConnection(ws));
+  ws.on('close', () => closeSocketConnection(ws));
+  ws.on('error', () => closeSocketConnection(ws));
 };
 
-const connectToPeers = newPeer => {
+const connectToPeers = (newPeer) => {
   const ws = new WebSockets(newPeer);
-  ws.on("open", () => {
+  ws.on('open', () => {
     initSocketConnection(ws);
   });
+  ws.on('error', () => console.log('Connection failed'));
+  ws.on('close', () => console.log('Connection failed'));
 };
 
 module.exports = {
   startP2PServer,
   connectToPeers,
-  broadcastNewBlock
+  broadcastNewBlock,
+  broadcastMempool, // <--- new line
 };

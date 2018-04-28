@@ -1,8 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
+const _ = require('lodash');
 const Blockchain = require('./blockchain');
 const P2P = require('./p2p');
+const Mempool = require('./mempool');
 const Wallet = require('./wallet');
 
 const {
@@ -10,6 +12,7 @@ const {
   createNewBlock,
   getAccountBalance,
   sendTx,
+  getUTxOutList,
 } = Blockchain;
 const {
   startP2PServer,
@@ -17,7 +20,12 @@ const {
 } = P2P;
 const {
   initWallet,
+  getPublicFromWallet,
+  getBalance,
 } = Wallet;
+const {
+  getMempool,
+} = Mempool;
 
 // Psssst. Don't forget about typing 'export HTTP_PORT=4000' in your console
 const PORT = process.env.HTTP_PORT || 3000;
@@ -53,9 +61,36 @@ app.get('/me/balance', (req, res) => {
   });
 });
 
+app.get('/me/address', (req, res) => {
+  res.send(getPublicFromWallet());
+});
+
+app.get('/blocks/:hash', (req, res) => {
+  const { hash } = req.params;
+  const block = _.find(getBlockchain(), { hash });
+  if (block === undefined) {
+    res.status(400).send('Block not found');
+  } else {
+    res.send(block);
+  }
+});
+
+app.get('/transactions/:id', (req, res) => {
+  const tx = _(getBlockchain())
+    .map(blocks => blocks.data)
+    .flatten()
+    .find({ id: req.params.id });
+  if (tx === undefined) {
+    res.status(400).send('Transaction not found');
+  }
+  res.send(tx);
+});
+
 app
   .route('/transactions')
-  .get((req, res) => {})
+  .get((req, res) => {
+    res.send(getMempool());
+  })
   .post((req, res) => {
     try {
       const {
@@ -67,16 +102,22 @@ app
       if (address === undefined || amount === undefined) {
         throw Error('Please specify and address and an amount');
       } else {
-        const result = sendTx(address, amount);
-        res.send(result);
+        const resPonse = sendTx(address, amount);
+        res.send(resPonse);
       }
     } catch (e) {
       res.status(400).send(e.message);
     }
   });
 
+app.get('/address/:address', (req, res) => {
+  const { address } = req.params;
+  const balance = getBalance(address, getUTxOutList());
+  res.send({ balance });
+});
+
 const server = app.listen(PORT, () =>
-  console.log(`JaecheolCoin Server running on port ${PORT} ✅`),
+  console.log(`Jaechel's HTTP Server running on port ${PORT} ✅`),
 );
 
 initWallet();
