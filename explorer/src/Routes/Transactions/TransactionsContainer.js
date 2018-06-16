@@ -6,7 +6,7 @@ import TransactionsPresenter from "./TransactionsPresenter";
 
 class TransactionsContainer extends Component {
     render() {
-        return <TransactionsPresenter /> ;
+        return <TransactionsPresenter {...this.props} />;
     }
 }
 
