@@ -43,7 +43,11 @@ const AppPresenter = ({ isLoading, transactions, blocks }) => (
             <Route
               exact
               path={`/blocks`}
-              render={() => <Blocks blocks={blocks} />}
+              render={() => (
+                <Blocks 
+                  blocks={blocks} 
+                />
+              )}
             />
             <Route
               exact
