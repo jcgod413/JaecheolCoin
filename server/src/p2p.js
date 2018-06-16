@@ -68,7 +68,7 @@ const initSocketConnection = (ws) => {
   handleSocketError(ws);
   sendMessage(ws, getLatest());
   setTimeout(() => {
-    sendMessageToAll(getAllMempool()); // changed line
+    sendMessageToAll(getAllMempool());
   }, 1000);
   setInterval(() => {
     if (sockets.includes(ws)) {
