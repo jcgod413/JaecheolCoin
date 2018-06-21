@@ -14,6 +14,7 @@ Make sure you have installated node.js 9.x on your machine.
 ```bash
 sudo npm install -g yarn
 
+cd server
 yarn install
 ```
 
