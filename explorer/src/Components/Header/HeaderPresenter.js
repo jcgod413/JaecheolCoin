@@ -58,7 +58,7 @@ const HeaderPresenter = props => {
     <HeaderContainer>
       <HeaderWrapper>
         <Title>
-          <TitleLink to="/">JaechelCoin Explorer</TitleLink>
+          <TitleLink to="/">JaecheolCoin Explorer</TitleLink>
         </Title>
         <Nav>
           <List>
